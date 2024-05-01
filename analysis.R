@@ -99,13 +99,22 @@ df_08 <- df_08_raw %>% mutate(
   Eng_Enroll = `reading enrollment, all students`,
 ) %>% sel()
 
-df_09 <- df_09_raw %>% mutate(
-  Year = 2019,
-  Grade = ifelse(`Grade \r\nLevel` == "HS", HS_ID, `Grade \r\nLevel`),
-  Math_IEP_Enroll = `Math \r\nEnrollment\r\nIEP`,
-  Math_Enroll = `Math \r\nEnrollment\r\nAll \r\nStudents`,
-  Eng_IEP_Enroll = `Reading Enrollment\r\nIEP`,
-  Eng_Enroll = `Reading \r\nEnrollment\r\nAll \r\nStudents`,
-) %>% sel()
+# df_09 <- df_09_raw %>% mutate(
+
+
+# ) %>% sel()
+df_09 <- df_09_raw %>%
+  select(
+    Year,`Grade \r\nLevel`,State,`Math \r\nEnrollment\r\nIEP`,`Math \r\nEnrollment\r\nAll \r\nStudents`,`Reading Enrollment\r\nIEP`,`Reading \r\nEnrollment\r\nAll \r\nStudents`
+  ) %>%
+  drop_na() %>%
+  mutate(
+    Year = as.numeric(Year),
+    Grade = ifelse(`Grade \r\nLevel` == "H", HS_ID, `Grade \r\nLevel`),
+    Math_IEP_Enroll = as.numeric(gsub(",","",`Math \r\nEnrollment\r\nIEP`)),
+    Math_Enroll = as.numeric(gsub(",","",`Math \r\nEnrollment\r\nAll \r\nStudents`)),
+    Eng_IEP_Enroll = as.numeric(gsub(",","",`Reading Enrollment\r\nIEP`)),
+    Eng_Enroll = as.numeric(gsub(",","",`Reading \r\nEnrollment\r\nAll \r\nStudents`)),
+  ) %>% sel()
 
 df <- bind_rows(df_07,df_08,df_09)
