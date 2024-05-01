@@ -101,9 +101,6 @@ df_08 <- df_08_raw %>% mutate(
 
 
 df_09 <- df_09_raw %>%
-  select(
-    Year,`Grade \r\nLevel`,State,`Math \r\nEnrollment\r\nIEP`,`Math \r\nEnrollment\r\nAll \r\nStudents`,`Reading Enrollment\r\nIEP`,`Reading \r\nEnrollment\r\nAll \r\nStudents`
-  ) %>%
   mutate(
     Year = as.numeric(Year),
     Grade = ifelse(`Grade \r\nLevel` == "H", HS_ID, `Grade \r\nLevel`),
