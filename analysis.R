@@ -99,10 +99,7 @@ df_08 <- df_08_raw %>% mutate(
   Eng_Enroll = `reading enrollment, all students`,
 ) %>% sel()
 
-# df_09 <- df_09_raw %>% mutate(
 
-
-# ) %>% sel()
 df_09 <- df_09_raw %>%
   select(
     Year,`Grade \r\nLevel`,State,`Math \r\nEnrollment\r\nIEP`,`Math \r\nEnrollment\r\nAll \r\nStudents`,`Reading Enrollment\r\nIEP`,`Reading \r\nEnrollment\r\nAll \r\nStudents`
