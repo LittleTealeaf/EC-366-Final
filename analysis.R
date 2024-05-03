@@ -110,4 +110,17 @@ df_09 <- df_09_raw %>%
     Eng_Enroll = as.numeric(gsub(",","",`Reading \r\nEnrollment\r\nAll \r\nStudents`)),
   ) %>% sel()
 
-df <- bind_rows(df_07,df_08,df_09)
+df_10 <- df_10_raw %>%
+  mutate(
+    Year = as.numeric(Year),
+    Grade = ifelse(`Grade \r\nLevel` == "H", HS_ID, `Grade \r\nLevel`),
+    Math_IEP_Enroll = as.numeric(gsub(",","",`Math \r\nEnrollment IEP`)),
+    Math_Enroll = as.numeric(gsub(",","",`Math \r\nEnrollment\r\nAll \r\nStudents`)),
+    Eng_IEP_Enroll = as.numeric(gsub(",","",`Reading Enrollment\r\nIEP`)),
+    Eng_Enroll = as.numeric(gsub(",","",`Reading \r\nEnrollment\r\nAll \r\nStudents`)),
+  ) %>% sel()
+
+df_07_10 <- bind_rows(df_07,df_08,df_09, df_10) %>%
+  mutate(State = toupper(State))
+
+# Looks like everything 2011 and up DONT use these fields?!
