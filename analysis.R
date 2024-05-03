@@ -153,9 +153,5 @@ df <- bind_rows(
     -ProfandAbove_Reading_Regular_Assessment_without_Accomodations_Grade_Level_Standards,
     -Reading_IEP_Regular_Assessment_with_Accomodations,
     -Reading_IEP_Regular_Assessment_without_Accomodations
-  )
-
-ggplot(
-  data = df %>% select(Year, count = Math_IEP_Regular_Assessment_with_Accommodations) %>% drop_na() %>% group_by(Year) %>% summarize(Math_IEP_Regular_Assessment_with_Accommodations = sum(count)),
-  mapping = aes(x = Year, y = Math_IEP_Regular_Assessment_with_Accommodations)
-) + geom_point() + geom_smooth()
+  ) %>%
+  select(order(names(.)))
