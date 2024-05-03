@@ -101,6 +101,7 @@ df <- bind_rows(
   raw_18 %>% mutate(Year = 2018)
 ) %>%
   mutate(
+    State = toupper(State),
     # Convert to numeric
     Math_IEP_Alternate_Assessment_Alternate_Std_Achievement_Total = as.numeric(Math_IEP_Alternate_Assessment_Alternate_Std_Achievement_Total),
     Math_IEP_Alternate_Assessment_Grade_Level_Std_Achievement_Total = as.numeric(Math_IEP_Alternate_Assessment_Grade_Level_Std_Achievement_Total),
