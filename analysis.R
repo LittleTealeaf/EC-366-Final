@@ -14,7 +14,7 @@ build_df <- function(start_year, links) {
 
     df <- df %>% mutate(Year = start_year + i - 1)
 
-    if(is.null(df_)) {
+    if (is.null(df_)) {
       df_ <- df
     } else {
       df_ <- dplyr::bind_rows(df_, df)
@@ -126,7 +126,7 @@ df_IEP %>%
   filter(State %in% STATES) %>%
   mutate(Class = as.character(Class)) %>%
   group_by(Year, State) %>%
-  summarize(IEP_Total = (sum(Math_IEP_Total) + sum(Reading_IEP_Total)) / 2 ) %>%
+  summarize(IEP_Total = (sum(Math_IEP_Total) + sum(Reading_IEP_Total)) / 2) %>%
   ggplot(
     mapping = aes(
       x = Year,
@@ -143,3 +143,60 @@ df_IEP %>%
 raw_ED_11 <- read_csv(
   "https://www2.ed.gov/about/inits/ed/edfacts/data-files/math-achievement-lea-sy2011-12.csv"
 )
+
+df_ED_Participation_raw <- read_csv(
+  "https://www2.ed.gov/about/inits/ed/edfacts/data-files/math-participation-lea-sy2017-18.csv"
+)
+
+
+clean_participation_data <- function(df) {
+  col_names <- colnames(df) %>% sort()
+  cols_pct <- col_names[grep("ALL_MTH\\d{2}PCTPART_\\d{4}", col_names)]
+  cols_cnt <- col_names[grep("ALL_MTH\\d{2}NUMPART_\\d{4}", col_names)]
+  cols_end <- gsub("PART_\\d{4}$", "TOTALPART", cols_cnt)
+
+  df[cols_pct] <- lapply(df[cols_pct], function(x) {
+    x %>%
+      str_replace_all("GE", "") %>%
+      str_replace_all("LE", "") %>%
+      str_replace_all("GT", "") %>%
+      str_replace_all("LT", "") %>%
+      str_replace_all("PS", "100") %>%
+      str_replace_na("100")
+  })
+
+  df[cols_pct] <- lapply(df[cols_pct], function(x) {
+    ifelse(
+      grepl("-", x),  # Check for presence of a dash '-'
+      as.numeric(sapply(strsplit(x, "-"), function(...) {
+        return(mean(as.numeric(...)))
+      })),  # Split, calculate average
+      as.numeric(x)  # Otherwise convert to numeric
+    )
+  })
+
+  for (i in seq_along(cols_pct)) {
+    col_pct <- cols_pct[i]
+    col_cnt <- cols_cnt[i]
+    col_end <- cols_end[i]
+    df[[col_end]] <- as.numeric(df[[col_cnt]]) / as.numeric(df[[col_pct]]) * 100
+  }
+
+  return(
+    df %>%
+      pivot_longer(
+        cols = ends_with("TOTALPART"),
+        names_to = 'GRADE',
+        names_pattern = "ALL_MTH(\\d+)NUMTOTALPART"
+      ) %>%
+      mutate(value = ifelse(is.na(value), 0, value)) %>%
+      group_by(STNAM, GRADE) %>%
+      summarize(Participants = sum(value)) %>%
+      mutate(State = STNAM, Grade = GRADE) %>%
+      select(-STNAM, -GRADE)
+  )
+}
+
+df <- df_ED_Participation_raw %>%
+  clean_participation_data() %>%
+  mutate(Year = 2011)
