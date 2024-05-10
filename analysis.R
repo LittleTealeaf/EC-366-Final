@@ -1,11 +1,13 @@
 library(tidyverse)
 
-# PULLING DATA FROM INTERNET
+# Pulling Data from the Internet. Hosted version of files on Google Drive (to avoid spamming gov website with requests...)
 
 build_df <- function(start_year, links) {
   df_ <- NULL
   for (i in seq_along(links)) {
-    df <- read_csv(links[i], skip = 4)
+    id <- links[i]
+    # df <- read_csv(links[i], skip = 4)
+    df <- read_csv(sprintf("https://docs.google.com/uc?id=%s&export=download", id), skip = 4)
     names(df) <- gsub("\\r\\n|\\s+", "_", names(df))
 
     names(df) <- gsub("_{2,}", "_", names(df))
@@ -26,18 +28,18 @@ build_df <- function(start_year, links) {
 df_IEP_raw <- build_df(
   2011,
   c(
-    "https://data.ed.gov/dataset/1deabc43-21f9-46a8-b93d-8fbbb6d89d48/resource/45ba9bed-468d-4791-a61e-ab385debe0e6/download/bassessment2011-12.csv",
-    "https://data.ed.gov/dataset/1deabc43-21f9-46a8-b93d-8fbbb6d89d48/resource/9796d0cb-4ff2-42ee-9040-b1342875fafc/download/bassessment2012-13.csv",
-    "https://data.ed.gov/dataset/1deabc43-21f9-46a8-b93d-8fbbb6d89d48/resource/29043602-3a7b-4905-81db-d66848823d63/download/bassessment2013-14.csv",
-    "https://data.ed.gov/dataset/1deabc43-21f9-46a8-b93d-8fbbb6d89d48/resource/0106be3f-ee5b-440b-be2f-0e741d47b03a/download/bassessment2014-15.csv",
-    "https://data.ed.gov/dataset/1deabc43-21f9-46a8-b93d-8fbbb6d89d48/resource/099a90a2-306e-436f-9ca8-c9bf4d6047e8/download/bassessment2015-16.csv",
-    "https://data.ed.gov/dataset/1deabc43-21f9-46a8-b93d-8fbbb6d89d48/resource/b40cff5f-f5a1-40c9-8441-51cee3aca1ff/download/bassessment2016-17.csv",
-    "https://data.ed.gov/dataset/1deabc43-21f9-46a8-b93d-8fbbb6d89d48/resource/89b57bb6-2017-410b-8c92-379fb1686e02/download/bassessment2017-18.csv",
-    "https://data.ed.gov/dataset/1deabc43-21f9-46a8-b93d-8fbbb6d89d48/resource/a04939b6-5fea-47c4-b6bd-aaa94ee79067/download/bassessment2018-19.csv"
+    "168lSKfOhT9n1VDDgroIi9rfw-Twhi4r_",
+    "166zoxw1cCPtWffh5-JL7kRbHgb_oG0xe",
+    "16CMMBCyLuybc5l_Rcb-0wkY6J_8DIGwX",
+    "16H5Db_1D3LDnmmBL0Z6hohk-WLwnL7M8",
+    "16LFBnMAr7QhWPGjKEUFYAq8_SPTmBl60",
+    "16NBQHLMb2_FeiTpZxnqEE8NNyva2TrZK",
+    "16Te_uVusbWHvhxDdZWRXvQq9n2yWui89",
+    "16WmaaGrOxUrouZnla4lCZiaenxrIcMHX"
   )
 )
 
-df_IEP <- df_IEP_raw %>%
+df <- df_IEP_raw %>%
   mutate(
     State = toupper(State),
     GradeLevel = as.numeric(Grade),
@@ -110,6 +112,12 @@ df_IEP <- df_IEP_raw %>%
       coalesce(Reading_IEP_Medical_Exemptions, 0) +
       coalesce(Reading_IEP_Non_Participants, 0)
   ) %>%
+  group_by(State) %>%
+  mutate(
+    Math_IEP_Total_Scaled = Math_IEP_Total / max(Math_IEP_Total),
+    Reading_IEP_Total_Scaled = Reading_IEP_Total / max(Reading_IEP_Total),
+  ) %>%
+  ungroup() %>%
   select(order(names(.)))
 
 STATES <- c(
@@ -120,13 +128,18 @@ STATES <- c(
   "SOUTH DAKOTA", "TENNESSEE", "TEXAS", "UTAH", "VERMONT", "VIRGINIA", "WASHINGTON", "WEST VIRGINIA", "WISCONSIN", "WYOMING"
 )
 
-df_IEP %>%
+
+
+df %>%
+  group_by(State) %>%
+  mutate(Math_IEP_Total_Scaled = scale(Math_IEP_Total)) %>%
+  ungroup() %>%
   # filter(State == "COLORADO") %>%
   filter(!is.na(State)) %>%
   filter(State %in% STATES) %>%
   mutate(Class = as.character(Class)) %>%
   group_by(Year, State) %>%
-  summarize(IEP_Total = (sum(Math_IEP_Total) + sum(Reading_IEP_Total)) / 2) %>%
+  summarize(IEP_Total = sum(Math_IEP_Total_Scaled)) %>%
   ggplot(
     mapping = aes(
       x = Year,
@@ -136,67 +149,16 @@ df_IEP %>%
   geom_point() +
   geom_line() +
   facet_wrap(State ~ .) +
-  ylab("Average Number of Students in Math and Reading IEPs")
+  ylab("Scaled Average Number of Students in Math IEPs") +
+  geom_vline(xintercept = 2013)
+
+# STATES that had little to no effect (Not made known to parents enough)
+# Nebraska, Missouri, Kentucky, Colorado
+
+# States that had significant effect
+# Deleware, California, North Dakota, Louisiana, Minnesta
+
+STATES_TREATED <- c("DELEWARE", "CALIFORNIA", "NORTH DAKOTA", "LOUISIANA", "MINNESOTA")
+STATES_NOT_TREATED <- c("NEBRASKA", "MISSOURI", "KENTUCKY", "COLORADO")
 
 
-# https://www2.ed.gov/about/inits/ed/edfacts/data-files/index.html
-raw_ED_11 <- read_csv(
-  "https://www2.ed.gov/about/inits/ed/edfacts/data-files/math-achievement-lea-sy2011-12.csv"
-)
-
-df_ED_Participation_raw <- read_csv(
-  "https://www2.ed.gov/about/inits/ed/edfacts/data-files/math-participation-lea-sy2017-18.csv"
-)
-
-
-clean_participation_data <- function(df) {
-  col_names <- colnames(df) %>% sort()
-  cols_pct <- col_names[grep("ALL_MTH\\d{2}PCTPART_\\d{4}", col_names)]
-  cols_cnt <- col_names[grep("ALL_MTH\\d{2}NUMPART_\\d{4}", col_names)]
-  cols_end <- gsub("PART_\\d{4}$", "TOTALPART", cols_cnt)
-
-  df[cols_pct] <- lapply(df[cols_pct], function(x) {
-    x %>%
-      str_replace_all("GE", "") %>%
-      str_replace_all("LE", "") %>%
-      str_replace_all("GT", "") %>%
-      str_replace_all("LT", "") %>%
-      str_replace_all("PS", "100") %>%
-      str_replace_na("100")
-  })
-
-  df[cols_pct] <- lapply(df[cols_pct], function(x) {
-    ifelse(
-      grepl("-", x),  # Check for presence of a dash '-'
-      as.numeric(sapply(strsplit(x, "-"), function(...) {
-        return(mean(as.numeric(...)))
-      })),  # Split, calculate average
-      as.numeric(x)  # Otherwise convert to numeric
-    )
-  })
-
-  for (i in seq_along(cols_pct)) {
-    col_pct <- cols_pct[i]
-    col_cnt <- cols_cnt[i]
-    col_end <- cols_end[i]
-    df[[col_end]] <- as.numeric(df[[col_cnt]]) / as.numeric(df[[col_pct]]) * 100
-  }
-
-  return(
-    df %>%
-      pivot_longer(
-        cols = ends_with("TOTALPART"),
-        names_to = 'GRADE',
-        names_pattern = "ALL_MTH(\\d+)NUMTOTALPART"
-      ) %>%
-      mutate(value = ifelse(is.na(value), 0, value)) %>%
-      group_by(STNAM, GRADE) %>%
-      summarize(Participants = sum(value)) %>%
-      mutate(State = STNAM, Grade = GRADE) %>%
-      select(-STNAM, -GRADE)
-  )
-}
-
-df <- df_ED_Participation_raw %>%
-  clean_participation_data() %>%
-  mutate(Year = 2011)
